@@ -22,12 +22,11 @@ jobs:
                   java-version: '11'
                   distribution: 'adopt'
 
-            - name: set version env variables
-              run: |
-                  KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi 'beta|test|nightly|latest' | sort -nr | head -n 1)
-                  echo "KEYCLOAK_VERSION=$KEYCLOAK_VERSION" >> $GITHUB_ENV
-                  PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)
-                  echo "PLUGIN_VERSION=$PLUGIN_VERSION" >> $GITHUB_ENV
+            - name: set keycloak env variable
+              run: echo "KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi 'beta|test|nightly|latest' | sort -nr | head -n 1)" >> $GITHUB_ENV
+
+            - name: set plugin env variable
+              run: echo "PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
             - name: set keycloak version output
               id: keycloak-version-output
@@ -64,7 +63,7 @@ jobs:
             - name: set version env variables
               run: |
                   echo "KEYCLOAK_VERSION=${{needs.build.outputs.KEYCLOAK_VERSION}}" >> $GITHUB_ENV
-                  echo "PLUGIN_VERSION=${{needs.build.outputsPLUGIN_VERSION}}" >> $GITHUB_ENV
+                  echo "PLUGIN_VERSION=${{needs.build.outputs.PLUGIN_VERSION}}" >> $GITHUB_ENV
 
             - name: check version
               run: echo "$KEYCLOAK_VERSION $PLUGIN_VERSION"
