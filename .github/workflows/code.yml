@@ -43,7 +43,8 @@ jobs:
 
     publish:
         runs-on: ubuntu-latest
-        if: ${{ github.ref == 'refs/head/dev' }}
+        needs: build
+        if: ${{ github.ref == 'refs/heads/dev' }}
         steps:
             - name: check version
               run: echo "$KEYCLOAK_VERSION $KEYCLOAK_VERSION"
