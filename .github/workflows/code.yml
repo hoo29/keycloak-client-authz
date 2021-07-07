@@ -23,7 +23,7 @@ jobs:
               run: echo "KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi 'beta|test|nightly|latest' | sort -nr | head -n 1)" >> $GITHUB_ENV
 
             - name: get plugin version
-              run: echo "PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout") >> $GITHUB_ENV
+              run: echo "PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
             - name: cache maven
               uses: actions/cache@v2
