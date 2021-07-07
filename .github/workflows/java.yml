@@ -18,13 +18,15 @@ jobs:
             - name: Cache Maven packages
               uses: actions/cache@v2
               with:
-                path: ~/.m2
-                key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-                restore-keys: ${{ runner.os }}-m2
+                  path: ~/.m2
+                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+                  restore-keys: ${{ runner.os }}-m2
 
             - name: Get latest keycloak version
-              run: export KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi "beta|test|nightly|latest" | sort -nr | head -n 1)
-              run: echo "building against version $KEYCLOAK_VERSION"
+              run:
+                  - |
+                      export KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi "beta|test|nightly|latest" | sort -nr | head -n 1)
+                      echo "building against version $KEYCLOAK_VERSION"
 
             - name: Build with Maven
               run: mvn --batch-mode --update-snapshots verify
