@@ -47,4 +47,4 @@ jobs:
         if: ${{ github.ref == 'refs/heads/dev' }}
         steps:
             - name: check version
-              run: echo "$KEYCLOAK_VERSION $KEYCLOAK_VERSION"
+              run: echo "$KEYCLOAK_VERSION $PLUGIN_VERSION"
