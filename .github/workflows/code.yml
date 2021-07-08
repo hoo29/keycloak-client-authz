@@ -5,15 +5,20 @@ on:
         branches: [$default-branch, 'dev']
     pull_request:
         branches: [$default-branch]
+        schedule:
+            - cron: '0 1 * * *'
 
 jobs:
-    build:
+    check:
         runs-on: ubuntu-latest
+        env:
+            RELEASE_URL: https://api.github.com/repos/hoo29/keycloak-client-authz/releases
         outputs:
+            NEEDS_REBUILD: ${{ steps.run-check.outputs.status }}
             KEYCLOAK_VERSION: ${{ steps.keycloak-version-output.outputs.ver }}
             PLUGIN_VERSION: ${{ steps.plugin-version-output.outputs.ver }}
         steps:
-            - name: check out
+            - name: checkout
               uses: actions/checkout@v2
 
             - name: setup jdk
@@ -36,34 +41,86 @@ jobs:
               id: plugin-version-output
               run: echo "::set-output name=ver::$PLUGIN_VERSION"
 
-            - name: get plugin version
-              run: echo "PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+            - name: run check
+              id: run-check
+              run: |
+                  echo "checking if existing releases"
+                  REBUILD=false
+                  RELEASE_SIZE=$(curl -sH 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq 'length')
+                  if [ "$RELEASE_SIZE" -eq 0 ]; then
+                      echo "no releases, rebuilding"
+                      REBUILD=true
+                  else
+                      echo "checking latest versions"
+                      RELEASED_VERSION=$(curl -sH 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq .[].tag_name -r | head -n 1)
+                      RELEASED_KEYCLOAK_VERSION=$(echo "$RELEASED_VERSION" | cut -d '-' -f 1)
+                      echo "released keycloak $RELEASED_KEYCLOAK_VERSION, published keycloak $KEYCLOAK_VERSION"
 
-            - name: cache maven
-              uses: actions/cache@v2
-              with:
-                  path: ~/.m2
-                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-${{ env.KEYCLOAK_VERSION }}
-                  restore-keys: ${{ runner.os }}-m2
+                      RELEASED_PLUGIN_VERSION=$(echo "$RELEASED_VERSION" | cut -d '-' -f 2)
+                      echo "released plugin $RELEASED_PLUGIN_VERSION, current plugin $PLUGIN_VERSION"
 
-            - name: build
-              run: mvn --batch-mode --update-snapshots verify
+                      if [ $RELEASED_KEYCLOAK_VERSION -lt "$KEYCLOAK_VERSION" ]; then
+                            echo "newer keycloak version, rebuilding"
+                            REBUILD=true
+                      elif [ $RELEASED_PLUGIN_VERSION -lt "$PLUGIN_VERSION" ]; then
+                            echo "newer plugin version, rebuilding"
+                            REBUILD=true
+                      fi
+                  fi
+                  echo "::set-output name=status::$REBUILD"
 
-            - name: archive jar
-              uses: actions/upload-artifact@v2
-              with:
-                  name: dist
-                  path: target/*.jar
+        build:
+            runs-on: ubuntu-latest
+            needs: check
+            if: ${{ needs.check.outputs.NEEDS_REBUILD }}
+            steps:
+                - name: set version env variables
+                  run: |
+                      echo "KEYCLOAK_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}" >> $GITHUB_ENV
+                      echo "PLUGIN_VERSION=${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
+
+                - name: checkout
+                  uses: actions/checkout@v2
+
+                - name: setup jdk
+                  uses: actions/setup-java@v2
+                  with:
+                      java-version: '11'
+                      distribution: 'adopt'
+
+                - name: check version
+                  run: echo "keycloak=$KEYCLOAK_VERSION plugin=$PLUGIN_VERSION"
+
+                - name: cache maven
+                  uses: actions/cache@v2
+                  with:
+                      path: ~/.m2
+                      key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-$KEYCLOAK_VERSION
+                      restore-keys: ${{ runner.os }}-m2
+
+                - name: build
+                  run: mvn --batch-mode --update-snapshots verify
+
+                - name: archive jar
+                  uses: actions/upload-artifact@v2
+                  with:
+                      name: dist
+                      path: target/*.jar
 
     publish:
         runs-on: ubuntu-latest
-        needs: build
-        if: ${{ github.ref == 'refs/heads/dev' }}
+        needs: [check, build]
+        if: ${{ needs.check.outputs.NEEDS_REBUILD && github.ref == 'refs/heads/dev' }}
         steps:
             - name: set version env variables
               run: |
-                  echo "KEYCLOAK_VERSION=${{needs.build.outputs.KEYCLOAK_VERSION}}" >> $GITHUB_ENV
-                  echo "PLUGIN_VERSION=${{needs.build.outputs.PLUGIN_VERSION}}" >> $GITHUB_ENV
+                  echo "KEYCLOAK_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}" >> $GITHUB_ENV
+                  echo "PLUGIN_VERSION=${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
 
             - name: check version
-              run: echo "$KEYCLOAK_VERSION $PLUGIN_VERSION"
+              run: echo "keycloak=$KEYCLOAK_VERSION plugin=$PLUGIN_VERSION"
+
+            - name: get artifact
+              uses: actions/download-artifact@v2
+              with:
+                  name: dist
