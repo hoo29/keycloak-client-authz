@@ -1,6 +1,10 @@
 # keycloak-client-authz
 
-Keycloak plugin for client authorisation. Allows using membership of client roles to enforce login authorisation during Keycloak authentication. Keycloak's built in authorisation services only provide for evaluation of policies but delegates enforcement to the clients themselves. For COTS software and SPA web apps this isn't always feasible.
+![main branch build](https://github.com/hoo29/keycloak-client-authz/actions/workflows/main.yml/badge.svg?branch=main)
+
+Keycloak plugin for client authorisation. Allows using membership of client roles to enforce authorisation during Keycloak login.
+
+Keycloak's built in authorisation services only provide for evaluation of policies but delegates enforcement to the clients themselves. For COTS software and SPA web apps this isn't always feasible.
 
 # installation
 

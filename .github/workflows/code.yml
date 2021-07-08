@@ -7,12 +7,13 @@ on:
         branches: [$default-branch]
         schedule:
             - cron: '0 1 * * *'
+env:
+    RELEASE_URL: https://api.github.com/repos/hoo29/keycloak-client-authz/releases
+    ARTIFACT_NAME: keycloak-client-authz
 
 jobs:
     check:
         runs-on: ubuntu-latest
-        env:
-            RELEASE_URL: https://api.github.com/repos/hoo29/keycloak-client-authz/releases
         outputs:
             NEEDS_REBUILD: ${{ steps.run-check.outputs.status }}
             KEYCLOAK_VERSION: ${{ steps.keycloak-version-output.outputs.ver }}
@@ -28,7 +29,7 @@ jobs:
                   distribution: 'adopt'
 
             - name: set keycloak env variable
-              run: echo "KEYCLOAK_VERSION=$(curl -s https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi 'beta|test|nightly|latest' | sort -nr | head -n 1)" >> $GITHUB_ENV
+              run: echo "KEYCLOAK_VERSION=$(curl -fsS https://registry.hub.docker.com/v2/repositories/jboss/keycloak/tags | jq .results[].name -r | grep -Evi 'beta|test|nightly|latest' | sort -nr | head -n 1)" >> $GITHUB_ENV
 
             - name: set plugin env variable
               run: echo "PLUGIN_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
@@ -46,13 +47,13 @@ jobs:
               run: |
                   echo "checking if existing releases"
                   REBUILD=false
-                  RELEASE_SIZE=$(curl -sH 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq 'length')
+                  RELEASE_SIZE=$(curl -fsS -H 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq 'length')
                   if [ "$RELEASE_SIZE" -eq 0 ]; then
                       echo "no releases, rebuilding"
                       REBUILD=true
                   else
                       echo "checking latest versions"
-                      RELEASED_VERSION=$(curl -sH 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq .[].tag_name -r | head -n 1)
+                      RELEASED_VERSION=$(curl -fsS -H 'Accept: application/vnd.github.v3+json' $RELEASE_URL | jq .[].tag_name -r | head -n 1)
                       RELEASED_KEYCLOAK_VERSION=$(echo "$RELEASED_VERSION" | cut -d '-' -f 1)
                       echo "released keycloak $RELEASED_KEYCLOAK_VERSION, published keycloak $KEYCLOAK_VERSION"
 
@@ -88,7 +89,7 @@ jobs:
                   java-version: '11'
                   distribution: 'adopt'
 
-            - name: check version
+            - name: check version variables
               run: echo "keycloak=$KEYCLOAK_VERSION plugin=$PLUGIN_VERSION"
 
             - name: cache maven
@@ -105,22 +106,51 @@ jobs:
               uses: actions/upload-artifact@v2
               with:
                   name: dist
-                  path: target/*.jar
+                  path: target/${ARTIFACT_NAME}.jar
+                  if-no-files-found: error
+                  retention-days: 7
 
     publish:
         runs-on: ubuntu-latest
         needs: [check, build]
-        if: ${{ needs.check.outputs.NEEDS_REBUILD && github.ref == 'refs/heads/dev' }}
+        if: ${{ needs.check.outputs.NEEDS_REBUILD && github.ref == 'refs/heads/dev' && github.event_name == "push" }}
+        permissions:
+            contents: write
         steps:
             - name: set version env variables
               run: |
                   echo "KEYCLOAK_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}" >> $GITHUB_ENV
                   echo "PLUGIN_VERSION=${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
 
-            - name: check version
+            - name: check version variables
               run: echo "keycloak=$KEYCLOAK_VERSION plugin=$PLUGIN_VERSION"
 
             - name: get artifact
               uses: actions/download-artifact@v2
               with:
                   name: dist
+
+            - name: checkout
+              uses: actions/checkout@v2
+
+            - name: tag code
+              run: |
+                  git tag -a "${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"  -m "action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"
+                  git push origin "${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"
+              with:
+                  repo-token: ${{ secrets.GITHUB_TOKEN }
+
+            - name: publish artifact
+              run: |
+                  curl -fsS -H 'Accept: application/vnd.github.v3+json' -X POST \
+                  -d '{"tag_name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "body": "See https://github.com/hoo29/keycloak-client-authz/blob/main/CHANGELOG.md" }' \
+                  $RELEASE_URL >> output.log
+                  ASSETS_URL=$(cat output.log |  jq '.assets_url' -r)
+
+                  curl -fsS -H 'Accept: application/vnd.github.v3+json' -X POST \
+                  --data-urlencode "name=${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar" \
+                  -data-binary @$ARTIFACT_NAME
+                   $ASSETS_URL
+
+              with:
+                  repo-token: ${{ secrets.GITHUB_TOKEN }
