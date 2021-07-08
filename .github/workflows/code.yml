@@ -154,11 +154,11 @@ jobs:
                     $RELEASE_URL >> output.log
                   # I'm sure this will never go wrong
                   UPLOAD_URL=$(cat output.log |  jq ".upload_url" -r | cut -d "{" -f 1)
-                  cat output.log
-                  ls
                   FILE_NAME="${FULL_VERSION}.jar"
-                  curl -fsS -X POST \
+                  curl -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
-                    -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    --data-binary @"${ARTIFACT_NAME}.jar" \
-                    "$UPLOAD_URL?name=${FILE_NAME}&label=${FILE_NAME}"
+                    -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                    -H "Content-Type: application/zip" \
+                    --data-binary "@${ARTIFACT_NAME}.jar" \
+                    "$UPLOAD_URL?name=${FILE_NAME}&label=${FILE_NAME}" >> output2.log
+                    cat output2.log
