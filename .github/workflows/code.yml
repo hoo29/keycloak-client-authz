@@ -135,21 +135,32 @@ jobs:
 
             - name: tag code
               run: |
-                  git tag -a "${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"  -m "action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"
-                  git push origin "${KEYCLOAK_VERSION}-${PLUGIN_VERSION}"
-              with:
-                  repo-token: ${{ secrets.GITHUB_TOKEN }
+                  curl -fsS \
+                    -X POST \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }} \
+                    -d '{"tag":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","message":"action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","object":"${{ GITHUB_SHA }}","type":"commit"}' \
+                    https://api.github.com/repos/${{ GITHUB_REPOSITORY }}/git/tags >> output.log
+                  SHA_VAL=$(cat output.log | jq '.sha' -r)
+                  curl -fsS \
+                    -X POST \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }} \
+                    -d '{"ref":"refs/tags/${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","sha":"$SHA_VAL"}' \
+                    https://api.github.com/repos/${{ GITHUB_REPOSITORY }}/git/refs
 
-            - name: publish artifact
-              run: |
-                  curl -fsS -H 'Accept: application/vnd.github.v3+json' -X POST \
-                  -d '{"tag_name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "body": "See https://github.com/hoo29/keycloak-client-authz/blob/main/CHANGELOG.md" }' \
-                  $RELEASE_URL >> output.log
-                  ASSETS_URL=$(cat output.log |  jq '.assets_url' -r)
+            # - name: publish artifact
+            #   run: |
+            #       curl -fsS -X POST \
+            #         -H 'Accept: application/vnd.github.v3+json' \
+            #         -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }} \
+            #         -d '{"tag_name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "name":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}", "body": "See https://github.com/hoo29/keycloak-client-authz/blob/main/CHANGELOG.md" }' \
+            #         $RELEASE_URL >> output.log
+            #       ASSETS_URL=$(cat output.log |  jq '.assets_url' -r)
 
-                  curl -fsS -H 'Accept: application/vnd.github.v3+json' -X POST \
-                  --data-urlencode "name=${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar" \
-                  -data-binary @$ARTIFACT_NAME
-                   $ASSETS_URL
-              with:
-                  repo-token: ${{ secrets.GITHUB_TOKEN }
+            #       curl -fsS -X POST \
+            #         -H 'Accept: application/vnd.github.v3+json' \
+            #         -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }} \
+            #         --data-urlencode "name=${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar" \
+            #         -data-binary @$ARTIFACT_NAME \
+            #         $ASSETS_URL
