@@ -96,7 +96,7 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: ~/.m2
-                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-$KEYCLOAK_VERSION
+                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-${{ env.KEYCLOAK_VERSION }}
                   restore-keys: ${{ runner.os }}-m2
 
             - name: build
@@ -106,7 +106,7 @@ jobs:
               uses: actions/upload-artifact@v2
               with:
                   name: dist
-                  path: target/${ARTIFACT_NAME}.jar
+                  path: target/${{ env.ARTIFACT_NAME }}.jar
                   if-no-files-found: error
                   retention-days: 7
 
