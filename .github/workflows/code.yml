@@ -160,5 +160,5 @@ jobs:
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Content-Type: application/zip" \
                     --data-binary "@${ARTIFACT_NAME}.jar" \
-                    "$UPLOAD_URL?name=${FILE_NAME}&label=${FILE_NAME}" >> output2.log
-                    cat output2.log
+                    "${UPLOAD_URL}?name=${FILE_NAME}&label=${FILE_NAME}" >> output2.log
+                  cat output2.log
