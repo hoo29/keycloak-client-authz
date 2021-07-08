@@ -8,7 +8,7 @@ on:
         schedule:
             - cron: '0 1 * * *'
 env:
-    RELEASE_URL: https://api.github.com/repos/hoo29/keycloak-client-authz/releases
+    RELEASE_URL: https://api.github.com/repos/${{ GITHUB_REPOSITORY }}/releases
     ARTIFACT_NAME: keycloak-client-authz
 
 jobs:
@@ -139,7 +139,7 @@ jobs:
                     -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }} \
-                    -d '{"tag":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","message":"action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","object":"${{ GITHUB_SHA }}","type":"commit"}' \
+                    -d '{"tag":"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","message":"action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}","object":"${{ github.sha }}","type":"commit"}' \
                     https://api.github.com/repos/${{ GITHUB_REPOSITORY }}/git/tags >> output.log
                   SHA_VAL=$(cat output.log | jq '.sha' -r)
                   curl -fsS \
