@@ -93,8 +93,8 @@ jobs:
               uses: actions/cache@v2
               with:
                   path: ~/.m2
-                  key: "${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}-$KEYCLOAK_VERSION"
-                  restore-keys: ${{ runner.os }}-m2
+                  key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+                  restore-keys: ${{ runner.os }}-m2-
 
             - name: build
               run: mvn --batch-mode --update-snapshots verify
@@ -118,14 +118,16 @@ jobs:
               run: |
                   echo "KEYCLOAK_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}" >> $GITHUB_ENV
                   echo "PLUGIN_VERSION=${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
+                  echo "FULL_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}-${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
 
+            - name: checkout
+              uses: actions/checkout@v2
+
+              # needs to be after checkout
             - name: get artifact
               uses: actions/download-artifact@v2
               with:
                   name: dist
-
-            - name: checkout
-              uses: actions/checkout@v2
 
             - name: tag code
               run: |
@@ -133,14 +135,14 @@ jobs:
                     -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    -d "{\"tag\":\"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\",\"message\":\"action release ${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\",\"object\":\"${{ github.sha }}\",\"type\":\"commit\"}" \
+                    -d "{\"tag\":\"${FULL_VERSION}\",\"message\":\"action release ${FULL_VERSION}\",\"object\":\"${{ github.sha }}\",\"type\":\"commit\"}" \
                     https://api.github.com/repos/${{ github.repository }}/git/tags >> output.log
                   SHA_VAL=$(cat output.log | jq ".sha" -r)
                   curl -fsS \
                     -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    -d "{\"ref\":\"refs/tags/${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\",\"sha\":\"$SHA_VAL\"}" \
+                    -d "{\"ref\":\"refs/tags/${FULL_VERSION}\",\"sha\":\"$SHA_VAL\"}" \
                     https://api.github.com/repos/${{ github.repository }}/git/refs
 
             - name: publish artifact
@@ -148,14 +150,15 @@ jobs:
                   curl -fsS -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    -d "{\"tag_name\":\"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\", \"name\":\"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md\"}" \
+                    -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/${{ env.default_branch }}/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
-                  UPLOAD_URL=$(cat output.log |  jq ".upload_url" -r)
+                  # I'm sure this will never go wrong
+                  UPLOAD_URL=$(cat output.log |  jq ".upload_url" -r | cut -d "{" -f 1)
                   cat output.log
                   ls
+                  FILE_NAME="${FULL_VERSION}.jar"
                   curl -fsS -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    --data-urlencode "name=${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar" \
-                    -data-binary @$ARTIFACT_NAME \
-                    $UPLOAD_URL
+                    --data-binary @"${ARTIFACT_NAME}.jar" \
+                    "$UPLOAD_URL?name=${FILE_NAME}&label=${FILE_NAME}"
