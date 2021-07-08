@@ -152,14 +152,15 @@ jobs:
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/${default-branch}/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
-                  # I'm sure this will never go wrong
 
+                  # I'm sure this will never go wrong
                   FILE_NAME="${FULL_VERSION}.jar"
                   UPLOAD_URL="$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)?name=${FILE_NAME}&label=${FILE_NAME}"
-                  echo "${UPLOAD_URL}"
-                  curl -X POST \
+                  echo "upload url is ${UPLOAD_URL}"
+                  file -b --mime-type "${ARTIFACT_NAME}.jar"
+                  curl \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Content-Type: application/zip" \
-                    --data-binary "@${ARTIFACT_NAME}.jar" \
-                    "${UPLOAD_URL}" >> output2.log
+                    --data-binary @"${ARTIFACT_NAME}.jar" \
+                    "${UPLOAD_URL}"
