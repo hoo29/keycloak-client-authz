@@ -155,13 +155,11 @@ jobs:
                   # I'm sure this will never go wrong
 
                   FILE_NAME="${FULL_VERSION}.jar"
-                  UPLOAD_URL="$(cat output.log |  jq ".upload_url" -r | cut -d '{' -f 1)?name=${FILE_NAME}&label=${FILE_NAME}"
-
-                  ls
+                  UPLOAD_URL="$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)?name=${FILE_NAME}&label=${FILE_NAME}"
+                  echo "${UPLOAD_URL}"
                   curl -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Content-Type: application/zip" \
                     --data-binary "@${ARTIFACT_NAME}.jar" \
                     "${UPLOAD_URL}" >> output2.log
-                  cat output2.log
