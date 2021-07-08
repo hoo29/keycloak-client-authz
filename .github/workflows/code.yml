@@ -151,7 +151,8 @@ jobs:
                     -d "{\"tag_name\":\"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\", \"name\":\"${KEYCLOAK_VERSION}-${PLUGIN_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
                   UPLOAD_URL=$(cat output.log |  jq ".upload_url" -r)
-
+                  cat output.log
+                  ls
                   curl -fsS -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
