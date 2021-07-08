@@ -150,15 +150,18 @@ jobs:
                   curl -fsS -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                    -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/${{ env.default_branch }}/CHANGELOG.md\"}" \
+                    -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/${default-branch}/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
                   # I'm sure this will never go wrong
-                  UPLOAD_URL=$(cat output.log |  jq ".upload_url" -r | cut -d "{" -f 1)
+
                   FILE_NAME="${FULL_VERSION}.jar"
+                  UPLOAD_URL="$(cat output.log |  jq ".upload_url" -r | cut -d '{' -f 1)?name=${FILE_NAME}&label=${FILE_NAME}"
+
+                  ls
                   curl -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Content-Type: application/zip" \
                     --data-binary "@${ARTIFACT_NAME}.jar" \
-                    "${UPLOAD_URL}?name=${FILE_NAME}&label=${FILE_NAME}" >> output2.log
+                    "${UPLOAD_URL}" >> output2.log
                   cat output2.log
