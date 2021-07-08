@@ -8,7 +8,7 @@ on:
         schedule:
             - cron: '0 1 * * *'
 env:
-    RELEASE_URL: https://api.github.com/repos/${{ GITHUB_REPOSITORY }}/releases
+    RELEASE_URL: https://api.github.com/repos/${{ github.repository }}/releases
     ARTIFACT_NAME: keycloak-client-authz
 
 jobs:
