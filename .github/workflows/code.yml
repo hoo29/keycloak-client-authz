@@ -154,7 +154,7 @@ jobs:
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
-                  echo "::set-output upload-url-base=$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)"
+                  echo "::set-output name=upload-url-base::$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)"
 
             - name: upload asset
               run: |
