@@ -155,9 +155,9 @@ jobs:
                     -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
                   cat output.log
-                  BASE_URL=$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)
-                  echo "base url is $BASE_URL"
-                  echo "::set-output name=upload-url-base::$BASE_URL"
+                  ZZ_RANDOM_VAR_NAME=$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)
+                  echo "base url is $ZZ_RANDOM_VAR_NAME"
+                  echo "::set-output name=upload-url-base::$ZZ_RANDOM_VAR_NAME"
 
             - name: upload asset
               run: |
