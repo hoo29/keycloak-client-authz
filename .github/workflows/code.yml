@@ -147,19 +147,20 @@ jobs:
                     https://api.github.com/repos/${{ github.repository }}/git/refs
 
             - name: create release
+              id: create-release
               run: |
                   curl -fsS -X POST \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -d "{\"tag_name\":\"${FULL_VERSION}\", \"name\":\"${FULL_VERSION}\", \"body\": \"See https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md\"}" \
                     $RELEASE_URL >> output.log
-                  echo "UPLOAD_URL_BASE=$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)" >> $GITHUB_ENV
+                  echo "::set-output upload-url-base=$(cat output.log |  jq '.upload_url' -r | cut -d '{' -f 1)"
 
             - name: upload asset
               run: |
                   # I'm sure this will never go wrong
                   FILE_NAME="${FULL_VERSION}.jar"
-                  UPLOAD_URL="${UPLOAD_URL_BASE}?name=${FILE_NAME}&label=${FILE_NAME}"
+                  UPLOAD_URL="${{ steps.create-release.outputs.upload-url-base }}?name=${FILE_NAME}&label=${FILE_NAME}"
                   echo "upload url is $UPLOAD_URL"
                   curl \
                     -H "Accept: application/vnd.github.v3+json" \
