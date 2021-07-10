@@ -3,7 +3,7 @@
 
     <groupId>spaces.huws.apps</groupId>
     <artifactId>keycloak-client-authz</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 
     <properties>
         <keycloakVersion>${env.KEYCLOAK_VERSION}</keycloakVersion>

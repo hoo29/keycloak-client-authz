@@ -111,7 +111,7 @@ jobs:
         runs-on: ubuntu-latest
         environment: prod
         needs: [check, build]
-        if: ${{ needs.check.outputs.NEEDS_REBUILD && github.ref == 'refs/heads/dev' }}
+        if: ${{ needs.check.outputs.NEEDS_REBUILD && github.ref == 'refs/heads/main' }}
         permissions:
             contents: write
         steps:
