@@ -11,6 +11,8 @@ env:
     RELEASE_URL: https://api.github.com/repos/${{ github.repository }}/releases
     ARTIFACT_NAME: keycloak-client-authz
 
+# do not think concurrency is needed as long as versioning is done correctly
+
 jobs:
     check:
         runs-on: ubuntu-latest
