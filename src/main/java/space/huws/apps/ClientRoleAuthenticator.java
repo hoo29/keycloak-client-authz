@@ -48,9 +48,13 @@ public class ClientRoleAuthenticator implements Authenticator {
              * defined case for ACCESS_DENIED and will return the default INVALID_USER_CREDENTIALS error to the browser, which
              * might be confusing for users as their credentials are valid.
              * 
+             * The audit event generated is also INVALID_USER_CREDENTIALS which is again not correct.
+             * 
              * We create our own error page to return a more accurate error.
              */
+
             context.getEvent().error(Errors.ACCESS_DENIED);
+
             final LoginFormsProvider forms = context.form();
             forms.setError(Messages.ACCESS_DENIED);
             final Response errorResponse = forms.createErrorPage(Response.Status.FORBIDDEN);
