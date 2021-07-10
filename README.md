@@ -9,6 +9,8 @@ Keycloak's built in authorisation services only provide for evaluation of polici
 
 # installation
 
+The compiled plugin is available via this project's [releases page](https://github.com/hoo29/keycloak-client-authz/releases).
+
 The are several options to install this plugin depending on how you are running Keycloak. Below are a couple of examples. For more information, see the official [Keycloak docs](https://www.keycloak.org/docs/latest/server_development/#registering-provider-implementations).
 
 ## custom docker image
