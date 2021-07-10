@@ -1,6 +1,6 @@
 # keycloak-client-authz
 
-![build](https://github.com/hoo29/keycloak-client-authz/actions/workflows/build/badge.svg)
+[![build](https://github.com/hoo29/keycloak-client-authz/actions/workflows/build.yml/badge.svg)](https://github.com/hoo29/keycloak-client-authz/actions/workflows/build.yml)
 [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/hoo29/keycloak-client-authz)
 
 Keycloak authenticator plugin for client authorisation. Allows using membership of client roles to enforce authorisation during Keycloak login.
