@@ -23,23 +23,16 @@ public class ClientRoleAuthenticator implements Authenticator {
 
     @Override
     public void close() {
+        // NOP
     }
 
     @Override
     public void authenticate(AuthenticationFlowContext context) {
-        final ClientModel client = context.getAuthenticationSession().getClient();
-        final UserModel user = context.getUser();
 
-        // keycloak should throw an error before this code is invoked as requiresUser() is true
-        if (user == null) {
-            throw new ClientRoleAuthenticatorException("user was null during flow");
-        }
+        // authentication has already occurred with a previous provider, authorise here
+        final boolean authorised = authorise(context);
 
-        final String clientRoleName = safeGetConfigValue(CONFIG_ROLE_NAME_NAME, context);
-        final boolean failOpen = safeGetConfigValue(CONFIG_FAIL_OPEN_NAME, context) == "true";
-
-        final RoleModel role = client.getRole(clientRoleName);
-        if ((role == null && failOpen) || user.hasRole(role)) {
+        if (authorised) {
             context.success();
         } else {
             /**
@@ -58,6 +51,7 @@ public class ClientRoleAuthenticator implements Authenticator {
             final LoginFormsProvider forms = context.form();
             forms.setError(Messages.ACCESS_DENIED);
             final Response errorResponse = forms.createErrorPage(Response.Status.FORBIDDEN);
+
             context.failure(AuthenticationFlowError.ACCESS_DENIED, errorResponse);
         }
     }
@@ -79,6 +73,23 @@ public class ClientRoleAuthenticator implements Authenticator {
 
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
+        // NOP
+    }
+
+    private boolean authorise(AuthenticationFlowContext context) {
+        final ClientModel client = context.getAuthenticationSession().getClient();
+        final UserModel user = context.getUser();
+
+        // keycloak should throw an error before this code is invoked as requiresUser() is true
+        if (user == null) {
+            throw new ClientRoleAuthenticatorException("user was null during flow");
+        }
+
+        final String clientRoleName = safeGetConfigValue(CONFIG_ROLE_NAME_NAME, context);
+        final boolean failOpen = safeGetConfigValue(CONFIG_FAIL_OPEN_NAME, context).equals("true");
+
+        final RoleModel role = client.getRole(clientRoleName);
+        return (role == null && failOpen) || user.hasRole(role);
     }
 
     private String safeGetConfigValue(String key, AuthenticationFlowContext context) {
@@ -90,7 +101,7 @@ public class ClientRoleAuthenticator implements Authenticator {
         if (confModel == null) {
             // given there are so few elements and no class constructor to nicely convert it to a map this seems fine...
             for (final ProviderConfigProperty prop : ClientRoleAuthenticatorFactory.CONFIG_PROPERTIES) {
-                if (prop.getName() == key) {
+                if (prop.getName().equals(key)) {
                     value = prop.getDefaultValue() instanceof String ? (String) prop.getDefaultValue() : null;
                     break;
                 }
