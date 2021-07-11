@@ -1,7 +1,7 @@
 # keycloak-client-authz
 
 [![build](https://github.com/hoo29/keycloak-client-authz/actions/workflows/build.yml/badge.svg)](https://github.com/hoo29/keycloak-client-authz/actions/workflows/build.yml)
-[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-orange.svg)](https://sonarcloud.io/dashboard?id=hoo29_keycloak-client-authz)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hoo29_keycloak-client-authz&metric=alert_status)](https://sonarcloud.io/dashboard?id=hoo29_keycloak-client-authz)
 [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/hoo29/keycloak-client-authz)
 
 Keycloak authenticator plugin for client authorisation. Allows using membership of client roles to enforce authorisation during Keycloak login.
@@ -10,7 +10,7 @@ Keycloak's built in authorisation services only provide for evaluation of polici
 
 # installation
 
-The compiled plugin is available via this project's [releases page](https://github.com/hoo29/keycloak-client-authz/releases).
+The compiled plugin is available at the project's [releases page](https://github.com/hoo29/keycloak-client-authz/releases).
 
 The are several options to install this plugin depending on how you are running Keycloak. Below are a couple of examples. For more information, see the official [Keycloak docs](https://www.keycloak.org/docs/latest/server_development/#registering-provider-implementations).
 
@@ -33,7 +33,7 @@ You can then build and run it:
 
 ```bash
 KEYCLOAK_VERSION=14.0.0
-PLUGIN_VERSION=1.0.0
+PLUGIN_VERSION=1.0.1
 
 docker build -t custom --build-arg KEYCLOAK_VERSION=$KEYCLOAK_VERSION --build-arg PLUGIN_VERSION=$PLUGIN_VERSION .
 
@@ -46,12 +46,17 @@ Assuming Keycloak is installed at `/opt/keycloak`.
 
 ```bash
 KEYCLOAK_VERSION=14.0.0
-PLUGIN_VERSION=1.0.0
+PLUGIN_VERSION=1.0.1
+
 curl -Lo /opt/keycloak/standalone/deployments/${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar https://github.com/hoo29/keycloak-client-authz/releases/download/${KEYCLOAK_VERSION}-${PLUGIN_VERSION}/${KEYCLOAK_VERSION}-${PLUGIN_VERSION}.jar
 
 ```
 
 # use
+
+TL;DR - setup a browser authentication flow that uses the `Client Role` authenticator, create client roles called `access` on your clients you want to protect and assign members.
+
+---
 
 After installation, Keycloak needs to be configured to use the new authenticator which has a display name of `Client Role` and a provider id of `auth-client-role`.
 
@@ -74,6 +79,16 @@ To setup a new Authentication flow:
 1. Select the `Bindings` tabs and update the `Browser Flow` value to your new flow.
 
 By default, if the client role does not exist the authenticator will fail open and allow access. This behaviour along with the name of the client role used can be changed in the authenticator config page.
+
+Now we need to create the needed client roles and assign access. This example assigns access directly to the user but you can assign also assign it via groups, realm roles, role mappers etc.
+
+1. Select the `Clients` menu item and select a client.
+1. Goto the `Roles` tab and `Add Role`.
+1. Provide a name of `access` or what you specified in the authenticator config page.
+1. Select the `Users` menu item and find a user that needs access.
+1. Goto the `Role Mappings` tab and select the client in the `Client Roles` drop down.
+1. Select the `access` role and click `Add selected`.
+1. Repeat for all clients you want protecting.
 
 # versioning
 
