@@ -9,6 +9,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.authentication.AuthenticationFlowContext;
@@ -49,64 +50,73 @@ public class ClientRoleAuthenticatorTest {
         when(asm.getClient()).thenReturn(client);
     }
 
-    public void mockErrorPath() {
-        // if we do this in before method mockito complains at me for writing bad code :(
-        EventBuilder eb = mock(EventBuilder.class);
-        LoginFormsProvider lfp = mock(LoginFormsProvider.class);
+    // separate failure and success tests so we only mock when necessary
 
-        when(context.getEvent()).thenReturn(eb);
-        when(context.form()).thenReturn(lfp);
+    @Nested
+    class ClientRoleAuthenticatorSuccessTests {
+        @Test
+        void defaultConfigNoClientRole() {
+            when(client.getRole(anyString())).thenReturn(null);
+
+            ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
+            cra.authenticate(context);
+
+            verify(context, times(1)).success();
+        }
+
+        @Test
+        void defaultConfigMemberClientRole(@Mock RoleModel role) {
+            when(client.getRole(anyString())).thenReturn(role);
+            when(user.hasRole(any(RoleModel.class))).thenReturn(true);
+
+            ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
+            cra.authenticate(context);
+
+            verify(context, times(1)).success();
+        }
+
     }
 
-    @Test
-    public void defaultConfigNoClientRole() {
-        when(client.getRole(anyString())).thenReturn(null);
+    @Nested
+    class ClientRoleAuthenticatorFailureTests {
 
-        ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
-        cra.authenticate(context);
+        @BeforeEach
+        public void mockErrorPath() {
+            EventBuilder eb = mock(EventBuilder.class);
+            LoginFormsProvider lfp = mock(LoginFormsProvider.class);
 
-        verify(context, times(1)).success();
+            when(context.getEvent()).thenReturn(eb);
+            when(context.form()).thenReturn(lfp);
+        }
+
+        @Test
+        void failSafeNoClientRole() {
+            Map<String, String> config = new HashMap<>();
+            config.put(ClientRoleAuthenticator.CONFIG_FAIL_OPEN_NAME, "false");
+            config.put(ClientRoleAuthenticator.CONFIG_ROLE_NAME_NAME, "access");
+            AuthenticatorConfigModel confModel = mock(AuthenticatorConfigModel.class);
+            when(context.getAuthenticatorConfig()).thenReturn(confModel);
+            when(confModel.getConfig()).thenReturn(config);
+
+            when(client.getRole(anyString())).thenReturn(null);
+            mockErrorPath();
+
+            ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
+            cra.authenticate(context);
+
+            verify(context, times(1)).failure(any(), any());
+        }
+
+        @Test
+        void defaultConfigNotMemberClientRole(@Mock RoleModel role) {
+            when(client.getRole(anyString())).thenReturn(role);
+            when(user.hasRole(any(RoleModel.class))).thenReturn(false);
+            mockErrorPath();
+
+            ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
+            cra.authenticate(context);
+
+            verify(context, times(1)).failure(any(), any());
+        }
     }
-
-    @Test
-    public void failSafeNoClientRole() {
-        Map<String, String> config = new HashMap<>();
-        config.put(ClientRoleAuthenticator.CONFIG_FAIL_OPEN_NAME, "false");
-        config.put(ClientRoleAuthenticator.CONFIG_ROLE_NAME_NAME, "access");
-        AuthenticatorConfigModel confModel = mock(AuthenticatorConfigModel.class);
-        when(context.getAuthenticatorConfig()).thenReturn(confModel);
-        when(confModel.getConfig()).thenReturn(config);
-
-        when(client.getRole(anyString())).thenReturn(null);
-        mockErrorPath();
-
-        ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
-        cra.authenticate(context);
-
-        verify(context, times(1)).failure(any(), any());
-    }
-
-    @Test
-    public void defaultConfigMemberClientRole(@Mock RoleModel role) {
-        when(client.getRole(anyString())).thenReturn(role);
-        when(user.hasRole(any(RoleModel.class))).thenReturn(true);
-
-        ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
-        cra.authenticate(context);
-
-        verify(context, times(1)).success();
-    }
-
-    @Test
-    public void defaultConfigNotMemberClientRole(@Mock RoleModel role) {
-        when(client.getRole(anyString())).thenReturn(role);
-        when(user.hasRole(any(RoleModel.class))).thenReturn(false);
-        mockErrorPath();
-
-        ClientRoleAuthenticator cra = new ClientRoleAuthenticator();
-        cra.authenticate(context);
-
-        verify(context, times(1)).failure(any(), any());
-    }
-
 }

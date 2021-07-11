@@ -17,7 +17,8 @@ public class ClientRoleAuthenticatorFactory implements AuthenticatorFactory {
     // Using static blocks and not constructors to match the rest of the keycloak codebase.
 
     public static final String PROVIDER_ID = "auth-client-role";
-    public static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
+
+    protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
 
     private static final Authenticator SINGLETON = new ClientRoleAuthenticator();
     private static final AuthenticationExecutionModel.Requirement[] REQUIREMENTS = {
@@ -50,15 +51,17 @@ public class ClientRoleAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
     public void init(Scope config) {
+        // NOP
     }
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
+        // NOP
     }
 
     @Override
     public void close() {
-
+        // NOP
     }
 
     @Override

@@ -9,13 +9,11 @@ on:
 
 jobs:
     analyse:
-        environment: analysis
-        name: Build
-        runs-on: ubuntu-latest
-        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         permissions:
             contents: read
             pull-requests: read
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         steps:
             - name: setup jdk
               uses: actions/setup-java@v2
@@ -49,6 +47,11 @@ jobs:
                       const matchArtifact = artifacts.data.artifacts.filter((artifact) => {
                         return artifact.name == "dist"
                       })[0];
+
+                      if (!matchArtifact) {
+                        process.exit(0);
+                      }
+
                       const download = await github.actions.downloadArtifact({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
@@ -58,14 +61,28 @@ jobs:
                       const fs = require('fs');
                       fs.writeFileSync('${{github.workspace}}/dist.zip', Buffer.from(download.data));
 
+            - name: check if analyse needed
+              id: check
+              run: |
+                  if [ -f "dist.zip" ]; then
+                      echo "::set-output name=check::true"
+                  else 
+                      echo "::set-output name=check::false"
+                  fi
+
             - name: extract artifact
+              if: ${{ steps.check.outputs.check == 'true' }}
               run: unzip dist.zip
 
-            - name: check dir listing
-              run: find -maxdepth 2 -type f -ls
-
             - name: Build and analyze
+              if: ${{ steps.check.outputs.check == 'true' }}
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+              run: |
+                  if [ -f "git.sha" ]; then
+                      mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar  -Dsonar.scm.revision=$(cat git.sha)
+                  else 
+                      mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+                  fi
+                  SHA=$(cat git.sha)
