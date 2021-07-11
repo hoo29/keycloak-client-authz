@@ -7,13 +7,14 @@ on:
     pull_request:
         branches:
             - main
-        schedule:
-            - cron: '0 1 * * *'
+    schedule:
+        - cron: '0 1 * * *'
 env:
     RELEASE_URL: https://api.github.com/repos/${{ github.repository }}/releases
     ARTIFACT_NAME: keycloak-client-authz
 
 # do not think concurrency is needed as long as versioning is done correctly
+# wish I knew about actions/github-script before writing this...
 
 jobs:
     check:
@@ -86,6 +87,8 @@ jobs:
 
             - name: checkout
               uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0 # for sonar
 
             - name: setup jdk
               uses: actions/setup-java@v2
@@ -107,8 +110,11 @@ jobs:
               uses: actions/upload-artifact@v2
               with:
                   name: dist
-                  path: target/${{ env.ARTIFACT_NAME }}.jar
-                  if-no-files-found: error
+                  path: |
+                      target/
+                      src/
+                      pom.xml
+                      .git/
                   retention-days: 7
 
     publish:
@@ -125,10 +131,6 @@ jobs:
                   echo "PLUGIN_VERSION=${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
                   echo "FULL_VERSION=${{ needs.check.outputs.KEYCLOAK_VERSION }}-${{ needs.check.outputs.PLUGIN_VERSION }}" >> $GITHUB_ENV
 
-            - name: checkout
-              uses: actions/checkout@v2
-
-              # needs to be after checkout
             - name: get artifact
               uses: actions/download-artifact@v2
               with:
@@ -169,5 +171,5 @@ jobs:
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                     -H "Content-Type: application/zip" \
-                    --data-binary @"${ARTIFACT_NAME}.jar" \
+                    --data-binary @"target/${ARTIFACT_NAME}.jar" \
                     "$UPLOAD_URL"
