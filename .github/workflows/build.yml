@@ -109,6 +109,11 @@ jobs:
             - name: update pom
               run: sed -i "s#\${env.KEYCLOAK_VERSION}#${KEYCLOAK_VERSION}#g" pom.xml
 
+            # not sure we can get sonar to update a PR due to disconnected workflow but we'll try!
+            - name: save PR head sha
+              if: ${{ github.event_name == 'pull_request' }}
+              run: echo "${{ github.event.pull_request.head.sha }}" >> git.sha
+
             - name: archive jar
               uses: actions/upload-artifact@v2
               with:
@@ -118,6 +123,7 @@ jobs:
                       src/
                       pom.xml
                       .git/
+                      git.sha
                   retention-days: 7
 
     publish:
