@@ -12,6 +12,10 @@ Keycloak's built in authorisation services only provide for evaluation of polici
 
 The plugin releases are formed of two versions `x.x.x-y.y.y` where `x.x.x` is they Keycloak version this plugin was built against and `y.y.y` is the semantic version of the plugin. Details of the plugin version can be found in the [CHANGELOG](./CHANGELOG.md).
 
+The Keycloak version does not change the plugin jar itself as no Keycloak components are bundled. All of the dependencies have a `scope` of `provided`. Building against a specific version is used as a means to check the Keycloak SPI has not changed.
+
+This plugin will likely work with any Keycloak version as the Authenticator SPI is fairly stable, although still marked as internal.
+
 # installation
 
 The compiled plugin is available at the project's [releases page](https://github.com/hoo29/keycloak-client-authz/releases).
@@ -94,11 +98,9 @@ Now we need to create the needed client roles and assign access. This example as
 1. Select the `access` role and click `Add selected`.
 1. Repeat for all clients you want protecting.
 
-# continuos delivery
+# continuous delivery
 
-Automatic rebuilds happen daily to check for new Keycloak versions. Rebuilding is used as a means to check the Keycloak SPI has not changed. It does not change the plugin jar itself as no Keycloak components are bundled. All of the dependencies have a `scope` of `provided`.
-
-Newer versions of this plugin will only be built against the latest Keycloak but will likely work with any version as the Authenticator SPI is fairly stable, although private.
+Automatic rebuilds happen daily to check for new Keycloak versions.
 
 See [releases](https://github.com/hoo29/keycloak-client-authz/releases) for published versions.
 
