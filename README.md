@@ -8,6 +8,10 @@ Keycloak authenticator plugin for client authorisation. Allows using membership 
 
 Keycloak's built in authorisation services only provide for evaluation of policies but delegates enforcement to the clients themselves. For COTS software and SPA web apps this isn't always feasible.
 
+# versioning
+
+The plugin releases are formed of two versions `x.x.x-y.y.y` where `x.x.x` is they Keycloak version this plugin was built against and `y.y.y` is the semantic version of the plugin. Details of the plugin version can be found in the [CHANGELOG](./CHANGELOG.md).
+
 # installation
 
 The compiled plugin is available at the project's [releases page](https://github.com/hoo29/keycloak-client-authz/releases).
@@ -54,7 +58,7 @@ curl -Lo /opt/keycloak/standalone/deployments/${KEYCLOAK_VERSION}-${PLUGIN_VERSI
 
 # use
 
-TL;DR - setup a browser authentication flow that uses the `Client Role` authenticator, create client roles called `access` on your clients you want to protect and assign members.
+TL;DR - Setup a browser authentication flow that uses the `Client Role` authenticator after a standard authenticator provider. Create client roles called `access` on your clients you want to protect and assign members.
 
 ---
 
@@ -72,8 +76,8 @@ To setup a new Authentication flow:
 
 1. Login to Keycloak as an admin and select the `Authentication` menu item.
 1. Create a new flow with `Top Level Flow Type` of `generic`.
-1. Add flows equal to the number of providers you want to use.
-1. In each flow, add executions for the desired provider and one for the `Client Role` provider.
+1. Do `Add flow` equal to the number of providers you want to use.
+1. In each flow, `Add execution` for the desired provider and one for the `Client Role` provider.
 1. Set all providers in the sub flows to `REQUIRED`.
 1. Set the sub flow to `ALTERNATIVE`.
 1. Select the `Bindings` tabs and update the `Browser Flow` value to your new flow.
@@ -89,10 +93,6 @@ Now we need to create the needed client roles and assign access. This example as
 1. Goto the `Role Mappings` tab and select the client in the `Client Roles` drop down.
 1. Select the `access` role and click `Add selected`.
 1. Repeat for all clients you want protecting.
-
-# versioning
-
-The plugin releases are formed of two versions `x.x.x-y.y.y` where `x.x.x` is they Keycloak version this plugin was built against and `y.y.y` is the semantic version of the plugin. Details of the plugin version can be found in the [CHANGELOG](./CHANGELOG.md).
 
 # continuos delivery
 
